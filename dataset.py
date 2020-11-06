@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 from skimage import io
 import torchvision.transforms as transforms
 import torch
+import cv2
 
 class CustomDataset(Dataset):
   def __init__(self,csv_file,root_dir,folder_name,transform = None,resize = None):
