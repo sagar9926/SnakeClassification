@@ -1,50 +1,25 @@
-#dataset.py
-
+import os
+import pandas as pd
+from torch.utils.data import Dataset
+from skimage import io
+import torchvision.transforms as transforms
 import torch
-import numpy as np
-import cv2
 
-from PIL import Image
+class CustomDataset(Dataset):
+  def __init__(self,csv_file,root_dir,folder_name,transform = None):
+    self.annotations = pd.read_csv(csv_file,index_col=0)
+    self.folder_name = folder_name
+    self.root_dir = root_dir
+    self.transform = transform
 
-class ClassificationDataset :
-    def __init__(self,
-                 image_paths,
-                 targets,
-                 resize = None , 
-                 augmentations = None):
-        self.image_paths = image_paths
-        self.targets = targets
-        self.resize = resize
-        self.augmantations = augmentations
-        
-    def __len__(self):
-        """
-        Returns the total number of samples in the dataset
-        """
-        return len(self.image_paths)
-    
-    def __getitem__(self,item):
-        """
-        For a given "item" index, return everything we need 
-        to train a given model
-        """
-        # Read the image
-        image = cv2.imread(self.image_paths[item])
-        
-        # grab the targets
-        targets = self.targets[item]
-        
-        #resize if needed
-        if self.resize is not None:
-            image = cv2.resize(image,
-                               (self.resize[1],
-                                self.resize[0]),interpolation = cv2.INTER_AREA)
-            
-        # pytorch expects CHW instead of HWC
-        image = np.transpose(image,(2,0,1)).astype(np.float32)
-        
-        return{
-            "image" : torch.tensor(image,dtype = torch.float),
-            "targets" : torch.tensor(targets,dtype = torch.long),
-            }
-        
+  def __len__(self):
+    return len(self.annotations)
+
+  def __getitem__(self,index):
+    img_path = os.path.join(self.root_dir,self.folder_name,str(self.annotations.iloc[index,0])+".jpg")
+    image = io.imread(img_path)
+    y_label = torch.tensor(int(self.annotations.iloc[index,2]))
+
+    if self.transform:
+      image = self.transform(image)
+    return(image,y_label)
